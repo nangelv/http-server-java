@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
@@ -8,6 +9,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 public class Main {
 
@@ -55,12 +57,16 @@ public class Main {
         }
     }
 
-    private static void handleCompression(HttpRequest request, HttpResponse.Builder response) {
+    private static void handleCompression(HttpRequest request, HttpResponse.Builder response) throws IOException {
         var acceptedEncodings = request.getHeader("Accept-Encoding");
         if (acceptedEncodings != null) {
             var encodings = acceptedEncodings.split(",");
             if (Arrays.stream(encodings).map(String::trim).anyMatch("gzip"::equals)) {
-                response.withContentEncoding("gzip");
+                try (GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(request.body.getBytes()))) {
+                    String compressedBody = new String(gis.readAllBytes());
+                    response.withContentEncoding("gzip");
+                    response.withBody(compressedBody);
+                }
             }
         }
     }
