@@ -64,12 +64,9 @@ public class Main {
                     }
                 } else if (method.equals("POST")) {
                     if(path.startsWith("/files/")) {
-                        System.out.println("Handling upload file request");
                         var fileName = path.substring("/files/".length());
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
-                        System.out.println("Reading headers");
                         readHeaders(reader);
-                        System.out.println("Reading body");
                         var body = readBody(reader);
                         if (!Files.exists(filePath.getParent())) {
                             System.out.println("Creating parent directory " + filePath.getParent());
@@ -93,12 +90,10 @@ public class Main {
         var headers = new HashMap<String, String>();
         var headerLine = reader.readLine();
         while (headerLine != null && !headerLine.isEmpty()) {
-            System.out.println("Read header value " + headerLine);
             var keyValuePair = headerLine.split(": ");
             headers.put(keyValuePair[0], keyValuePair[1]);
             headerLine = reader.readLine();
         }
-        System.out.println("Read header value " + headerLine);
         return headers;
     }
 
@@ -106,9 +101,9 @@ public class Main {
         var stringBuilder = new StringBuilder();
         var contentLine = reader.readLine();
         while (contentLine != null) {
+            System.out.println("Read from body: " + contentLine);
             stringBuilder.append(contentLine);
             contentLine = reader.readLine();
-            System.out.println("Read from body: " + contentLine);
         }
         return stringBuilder.toString();
     }
