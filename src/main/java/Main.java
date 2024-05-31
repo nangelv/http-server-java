@@ -1,11 +1,11 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,9 +46,7 @@ public class Main {
             try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 var request = getRequest(reader);
                 var response = routeRequest(request);
-                if ("gzip".equals(request.getHeader("Accept-Encoding"))) {
-                    response.withContentEncoding("gzip");
-                }
+                handleCompression(request, response);
                 sendResponse(clientSocket, response);
             }
         } catch (IOException e) {
@@ -57,10 +55,22 @@ public class Main {
         }
     }
 
+    private static void handleCompression(HttpRequest request, HttpResponse.Builder response) {
+        var acceptedEncodings = request.getHeader("Accept-Encoding");
+        if (acceptedEncodings != null) {
+            var encodings = acceptedEncodings.split(",");
+            if (Arrays.asList(encodings).contains("gzip")) {
+                response.withContentEncoding("gzip");
+            }
+        }
+    }
+
     private static HttpRequest getRequest(BufferedReader reader) throws IOException {
-        var requestLine = reader.readLine().split(" ");
-        var method = requestLine[0];
-        var path = requestLine[1];
+        var requestLine = reader.readLine();
+        if (requestLine == null) return null;
+        var requestArgs = requestLine.split(" ");
+        var method = requestArgs[0];
+        var path = requestArgs[1];
         var headers = readHeaders(reader);
         var body = readBody(reader, headers);
         return new HttpRequest(method, path, headers, body);
