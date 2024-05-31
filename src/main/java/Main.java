@@ -68,7 +68,10 @@ public class Main {
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
                         readHeaders(reader);
                         var body = readBody(reader);
-                        System.out.println("Saving file to disc at " + filePath);
+                        if (!Files.exists(filePath.getParent())) {
+                            System.out.println("Creating parent directory " + filePath.getParent());
+                            Files.createDirectories(filePath.getParent());
+                        }
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
                         okResponse(clientSocket, 201);
@@ -77,7 +80,6 @@ public class Main {
             }
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
-            System.out.println("Cause: " + e.getCause());
             e.printStackTrace();
         }
     }
