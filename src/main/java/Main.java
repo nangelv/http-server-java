@@ -59,7 +59,7 @@ public class Main {
         var acceptedEncodings = request.getHeader("Accept-Encoding");
         if (acceptedEncodings != null) {
             var encodings = acceptedEncodings.split(",");
-            if (Arrays.asList(encodings).contains("gzip")) {
+            if (Arrays.stream(encodings).map(String::trim).anyMatch("gzip"::equals)) {
                 response.withContentEncoding("gzip");
             }
         }
