@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 
 public class Main {
@@ -36,6 +37,7 @@ public class Main {
     private static void handleHttpConnection(Socket clientSocket) {
         try {
             System.out.println("Accepted new connection from " + clientSocket.getRemoteSocketAddress());
+            System.out.println("Starting at " + LocalDateTime.now());
             try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 var requestLine = reader.readLine().split(" ");
                 var method = requestLine[0];
@@ -67,7 +69,9 @@ public class Main {
                         var fileName = path.substring("/files/".length());
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
                         readHeaders(reader);
+                        System.out.println("About to start reading body at " + LocalDateTime.now());
                         var body = readBody(reader);
+                        System.out.println("Creating parent directory at " + LocalDateTime.now());
                         System.out.println("Creating parent directory " + filePath.getParent());
                         Files.createDirectory(filePath.getParent());
                         Files.writeString(filePath, body);
