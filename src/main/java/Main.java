@@ -4,7 +4,6 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -44,25 +43,31 @@ public class Main {
                 var path = requestLine[1];
                 if (method.equals("GET")) {
                     if (path.equals("/")) {
-                        okResponse(clientSocket);
+                        sendResponse(clientSocket, HttpResponse.ok());
                     } else if (path.startsWith("/echo/")) {
                         var echoArgument = path.substring("/echo/".length());
-                        okResponse(clientSocket, echoArgument);
+                        sendResponse(clientSocket, HttpResponse.ok()
+                                .withContentType("text/plain")
+                                .withBody(echoArgument));
                     } else if (path.equals("/user-agent")) {
                         var headers = readHeaders(reader);
                         var userAgent = headers.get("User-Agent");
-                        okResponse(clientSocket, userAgent);
+                        sendResponse(clientSocket, HttpResponse.ok()
+                                .withContentType("text/plain")
+                                .withBody(userAgent));
                     } else if(path.startsWith("/files/")) {
                         var fileName = path.substring("/files/".length());
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
                         if (Files.exists(filePath)) {
                             var fileContent = Files.readString(filePath);
-                            okResponse(clientSocket, fileContent, "application/octet-stream");
+                            sendResponse(clientSocket, HttpResponse.ok()
+                                    .withContentType("application/octet-stream")
+                                    .withBody(fileContent));
                         } else {
-                            notFoundResponse(clientSocket);
+                            sendResponse(clientSocket, HttpResponse.notFound());
                         }
                     } else {
-                        notFoundResponse(clientSocket);
+                        sendResponse(clientSocket, HttpResponse.notFound());
                     }
                 } else if (method.equals("POST")) {
                     if(path.startsWith("/files/")) {
@@ -75,17 +80,15 @@ public class Main {
                             Files.createDirectories(filePath.getParent());
                         }
                         Files.writeString(filePath, body);
-                        System.out.println("Saved new file at " + filePath);
-                        System.out.println("With content:\n" + body);
-                        okResponse(clientSocket, 201, "Created");
+                        System.out.println("Saved new file at " + filePath + " with content:\n" + body);
+                        sendResponse(clientSocket, HttpResponse.created());
                     } else {
-                        notFoundResponse(clientSocket);
+                        sendResponse(clientSocket, HttpResponse.notFound());
                     }
                 }
             }
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -101,51 +104,14 @@ public class Main {
     }
 
     private static String readBody(BufferedReader reader, int contentLength) throws IOException {
-//        var stringBuilder = new StringBuilder();
-//        var ch = reader.read();
         var content = new char[contentLength];
-        System.out.println("Start reading characters at " + LocalDateTime.now());
         if (reader.read(content) == -1) {
             throw new RuntimeException("No content found");
         }
-//        for (var i = 0; i < contentLength - 1; i++) {
-//            System.out.println("Reading character from body at " + LocalDateTime.now());
-//            stringBuilder.append((char)ch);
-//            ch = reader.read();
-//        }
-        System.out.println("Finished reading characters at " + LocalDateTime.now());
         return new String(content);
     }
 
-    private static void notFoundResponse(Socket clientSocket) throws IOException {
-        clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
-    }
-
-    private static void okResponse(Socket clientSocket, String body, String contentType, int statusCode, String reason) throws IOException {
-        var okResponse = "HTTP/1.1 %d %s\r\n".formatted(statusCode, reason);
-        if (body != null) {
-            okResponse += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n%s".formatted(contentType, body.length(), body);
-        } else {
-            okResponse += "\r\n";
-        }
-        System.out.println("Full ok response");
-        System.out.println(okResponse);
-        clientSocket.getOutputStream().write(okResponse.getBytes());
-    }
-
-    private static void okResponse(Socket clientSocket, int statusCode, String reason) throws IOException {
-        okResponse(clientSocket, null, null, statusCode, reason);
-    }
-
-    private static void okResponse(Socket clientSocket, String body) throws IOException {
-        okResponse(clientSocket, body, "text/plain", 200, "OK");
-    }
-
-    private static void okResponse(Socket clientSocket, String body, String contentType) throws IOException {
-        okResponse(clientSocket, body, contentType, 200, "OK");
-    }
-
-    private static void okResponse(Socket clientSocket) throws IOException {
-        okResponse(clientSocket, null, null, 200, "OK");
+    private static void sendResponse(Socket clientSocket, HttpResponse.Builder response) throws IOException {
+        clientSocket.getOutputStream().write(response.build().getResponseBytes());
     }
 }
