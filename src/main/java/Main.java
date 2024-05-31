@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.HashMap;
 
@@ -65,11 +66,9 @@ public class Main {
                     if(path.startsWith("/files/")) {
                         var fileName = path.substring("/files/".length());
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
-                        System.out.println("Handling file upload to " + fileName);
                         readHeaders(reader);
-                        System.out.println("Saving new file to " + filePath);
                         var body = readBody(reader);
-                        System.out.println("Read file body content:\n " + body);
+                        System.out.println("Saving file to disc at " + filePath);
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
                         okResponse(clientSocket, 201);
@@ -95,7 +94,6 @@ public class Main {
     private static String readBody(BufferedReader reader) throws IOException {
         var stringBuilder = new StringBuilder();
         var contentLine = reader.readLine();
-        System.out.println("Read line: " + contentLine);
         while (contentLine != null) {
             stringBuilder.append(contentLine);
             contentLine = reader.readLine();
