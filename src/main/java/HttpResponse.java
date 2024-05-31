@@ -34,7 +34,7 @@ public class HttpResponse {
         var response = "HTTP/1.1 %d %s\r\n".formatted(statusCode, statusMessage);
         if (body != null) {
             if (contentEncoding != null) {
-                response += "Content-Encoding: %s\r\n";
+                response += "Content-Encoding: %s\r\n".formatted(contentEncoding);
             }
             response += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n%s".formatted(contentType, body.length(), body);
         } else {
