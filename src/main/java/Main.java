@@ -74,6 +74,7 @@ public class Main {
                         }
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
+                        System.out.println("With content:\n" + body);
                         okResponse(clientSocket, 201);
                     } else {
                         notFoundResponse(clientSocket);
@@ -101,7 +102,6 @@ public class Main {
         var stringBuilder = new StringBuilder();
         var contentLine = reader.readLine();
         while (contentLine != null) {
-            System.out.println("Read from body: " + contentLine);
             stringBuilder.append(contentLine);
             contentLine = reader.readLine();
         }
