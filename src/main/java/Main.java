@@ -69,6 +69,7 @@ public class Main {
                         readHeaders(reader);
                         System.out.println("Saving new file to " + filePath);
                         var body = readBody(reader);
+                        System.out.println("Read file body content:\n " + body);
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
                         okResponse(clientSocket, 201);
