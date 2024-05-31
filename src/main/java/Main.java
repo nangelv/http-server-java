@@ -84,9 +84,11 @@ public class Main {
     }
 
     private static void okResponse(Socket clientSocket, String body, String contentType) throws IOException {
-        var okResponse = "HTTP/1.1 200 OK\r\n\r\n";
+        var okResponse = "HTTP/1.1 200 OK\r\n";
         if (body != null) {
             okResponse += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n%s".formatted(contentType, body.length(), body);
+        } else {
+            okResponse += "\r\n";
         }
         System.out.println("Full ok response");
         System.out.println(okResponse);
