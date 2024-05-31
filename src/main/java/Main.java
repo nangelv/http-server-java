@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 
 public class Main {
 
@@ -35,26 +36,41 @@ public class Main {
         try {
             System.out.println("Accepted new connection from " + clientSocket.getRemoteSocketAddress());
             try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-                var path = reader.readLine().split(" ")[1];
-                if (path.equals("/")) {
-                    okResponse(clientSocket);
-                } else if (path.startsWith("/echo/")) {
-                    var echoArgument = path.substring("/echo/".length());
-                    okResponse(clientSocket, echoArgument);
-                } else if (path.equals("/user-agent")) {
-                    String userAgent = readHeader(reader, "User-Agent");
-                    okResponse(clientSocket, userAgent);
-                } else if(path.startsWith("/files/")) {
-                    var fileName = path.substring("/files/".length());
-                    var filePath = Path.of(SERVER_DIRECTORY, fileName);
-                    if (Files.exists(filePath)) {
-                        var fileContent = Files.readString(filePath);
-                        okResponse(clientSocket, fileContent, "application/octet-stream");
+                var requestLine = reader.readLine().split(" ");
+                var method = requestLine[0];
+                var path = requestLine[1];
+                if (method.equals("GET")) {
+                    if (path.equals("/")) {
+                        okResponse(clientSocket);
+                    } else if (path.startsWith("/echo/")) {
+                        var echoArgument = path.substring("/echo/".length());
+                        okResponse(clientSocket, echoArgument);
+                    } else if (path.equals("/user-agent")) {
+                        var headers = readHeaders(reader);
+                        var userAgent = headers.get("User-Agent");
+                        okResponse(clientSocket, userAgent);
+                    } else if(path.startsWith("/files/")) {
+                        var fileName = path.substring("/files/".length());
+                        var filePath = Path.of(SERVER_DIRECTORY, fileName);
+                        if (Files.exists(filePath)) {
+                            var fileContent = Files.readString(filePath);
+                            okResponse(clientSocket, fileContent, "application/octet-stream");
+                        } else {
+                            notFoundResponse(clientSocket);
+                        }
                     } else {
                         notFoundResponse(clientSocket);
                     }
-                } else {
-                    notFoundResponse(clientSocket);
+                } else if (method.equals("POST")) {
+                    if(path.startsWith("/files/")) {
+                        var fileName = path.substring("/files/".length());
+                        var filePath = Path.of(SERVER_DIRECTORY, fileName);
+                        readHeaders(reader);
+                        var body = readBody(reader);
+                        Files.writeString(filePath, body);
+                        System.out.println("Saved new file at " + filePath);
+                        okResponse(clientSocket, 201);
+                    }
                 }
             }
         } catch (IOException e) {
@@ -62,29 +78,33 @@ public class Main {
         }
     }
 
-    private static String readHeader(BufferedReader reader, String headerToFind) throws IOException {
-        if (!headerToFind.endsWith(":")) {
-            headerToFind += ":";
-        }
-        String headerLine = reader.readLine();
-        String headerValue = null;
-        while (headerLine != null) {
-            // Implementation is case-sensitive, HTTP headers are case-insensitive by specification
-            if (headerLine.startsWith(headerToFind)) {
-                headerValue = headerLine.substring(headerToFind.length()).trim();
-                break;
-            }
+    private static HashMap<String, String> readHeaders(BufferedReader reader) throws IOException {
+        var headers = new HashMap<String, String>();
+        var headerLine = reader.readLine();
+        while (headerLine != null && !headerLine.isEmpty()) {
+            var keyValuePair = headerLine.split(": ");
+            headers.put(keyValuePair[0], keyValuePair[1]);
             headerLine = reader.readLine();
         }
-        return headerValue;
+        return headers;
+    }
+
+    private static String readBody(BufferedReader reader) throws IOException {
+        var stringBuilder = new StringBuilder();
+        var contentLine = reader.readLine();
+        while (contentLine != null) {
+            stringBuilder.append(contentLine);
+            contentLine = reader.readLine();
+        }
+        return stringBuilder.toString();
     }
 
     private static void notFoundResponse(Socket clientSocket) throws IOException {
         clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
     }
 
-    private static void okResponse(Socket clientSocket, String body, String contentType) throws IOException {
-        var okResponse = "HTTP/1.1 200 OK\r\n";
+    private static void okResponse(Socket clientSocket, String body, String contentType, int statusCode) throws IOException {
+        var okResponse = "HTTP/1.1 %d OK\r\n".formatted(statusCode);
         if (body != null) {
             okResponse += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n%s".formatted(contentType, body.length(), body);
         } else {
@@ -95,11 +115,19 @@ public class Main {
         clientSocket.getOutputStream().write(okResponse.getBytes());
     }
 
+    private static void okResponse(Socket clientSocket, int statusCode) throws IOException {
+        okResponse(clientSocket, null, null, statusCode);
+    }
+
     private static void okResponse(Socket clientSocket, String body) throws IOException {
-        okResponse(clientSocket, body, "text/plain");
+        okResponse(clientSocket, body, "text/plain", 200);
+    }
+
+    private static void okResponse(Socket clientSocket, String body, String contentType) throws IOException {
+        okResponse(clientSocket, body, contentType, 200);
     }
 
     private static void okResponse(Socket clientSocket) throws IOException {
-        okResponse(clientSocket, null);
+        okResponse(clientSocket, null, null, 200);
     }
 }
