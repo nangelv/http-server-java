@@ -103,7 +103,7 @@ public class Main {
     private static String readBody(BufferedReader reader, int contentLength) throws IOException {
 //        var stringBuilder = new StringBuilder();
 //        var ch = reader.read();
-        var content = new char[contentLength - 1];
+        var content = new char[contentLength];
         System.out.println("Start reading characters at " + LocalDateTime.now());
         if (reader.read(content) == -1) {
             throw new RuntimeException("No content found");
