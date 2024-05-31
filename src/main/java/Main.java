@@ -11,14 +11,24 @@ public class Main {
         System.out.println("Logs from your program will appear here!");
 
         ServerSocket serverSocket = null;
-        Socket clientSocket = null;
 
         try {
             serverSocket = new ServerSocket(4221);
             // Since the tester restarts your program quite often, setting SO_REUSEADDR
             // ensures that we don't run into 'Address already in use' errors
             serverSocket.setReuseAddress(true);
-            clientSocket = serverSocket.accept(); // Wait for connection from client.
+            while (true) {
+                Socket clientSocket = serverSocket.accept(); // Wait for connection from client.
+                var thread = new Thread(() -> handleHttpConnection(clientSocket), "HTTP connection");
+                thread.start();
+            }
+        } catch (IOException e) {
+            System.out.println("IOException: " + e.getMessage());
+        }
+    }
+
+    private static void handleHttpConnection(Socket clientSocket) {
+        try {
             System.out.println("accepted new connection");
             var templateResponse = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s";
             try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
