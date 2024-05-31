@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -10,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class Main {
 
@@ -62,10 +60,11 @@ public class Main {
         if (acceptedEncodings != null) {
             var encodings = acceptedEncodings.split(",");
             if (Arrays.stream(encodings).map(String::trim).anyMatch("gzip"::equals)) {
-                try (GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(response.getBody().getBytes()))) {
-                    String compressedBody = new String(gis.readAllBytes());
+                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                    GZIPOutputStream gzip = new GZIPOutputStream(outputStream);
+                    gzip.write(response.getBody().getBytes());
                     response.withContentEncoding("gzip");
-                    response.withBody(compressedBody);
+                    response.withBody(outputStream.toString());
                 }
             }
         }
