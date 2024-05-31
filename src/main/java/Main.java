@@ -88,6 +88,8 @@ public class Main {
         if (body != null) {
             okResponse += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n%s".formatted(contentType, body.length(), body);
         }
+        System.out.println("Full ok response");
+        System.out.println(okResponse);
         clientSocket.getOutputStream().write(okResponse.getBytes());
     }
 
