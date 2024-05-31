@@ -77,7 +77,7 @@ public class Main {
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
                         System.out.println("With content:\n" + body);
-                        okResponse(clientSocket, 201);
+                        okResponse(clientSocket, 201, "Created");
                     } else {
                         notFoundResponse(clientSocket);
                     }
@@ -101,23 +101,28 @@ public class Main {
     }
 
     private static String readBody(BufferedReader reader, int contentLength) throws IOException {
-        var stringBuilder = new StringBuilder();
-        var ch = reader.read();
-        for (var i = 0; i < contentLength - 1; i++) {
-            System.out.println("Reading character from body at " + LocalDateTime.now());
-            stringBuilder.append((char)ch);
-            ch = reader.read();
+//        var stringBuilder = new StringBuilder();
+//        var ch = reader.read();
+        var content = new char[contentLength - 1];
+        System.out.println("Start reading characters at " + LocalDateTime.now());
+        if (reader.read(content) == -1) {
+            throw new RuntimeException("No content found");
         }
+//        for (var i = 0; i < contentLength - 1; i++) {
+//            System.out.println("Reading character from body at " + LocalDateTime.now());
+//            stringBuilder.append((char)ch);
+//            ch = reader.read();
+//        }
         System.out.println("Finished reading characters at " + LocalDateTime.now());
-        return stringBuilder.toString();
+        return new String(content);
     }
 
     private static void notFoundResponse(Socket clientSocket) throws IOException {
         clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
     }
 
-    private static void okResponse(Socket clientSocket, String body, String contentType, int statusCode) throws IOException {
-        var okResponse = "HTTP/1.1 %d OK\r\n".formatted(statusCode);
+    private static void okResponse(Socket clientSocket, String body, String contentType, int statusCode, String reason) throws IOException {
+        var okResponse = "HTTP/1.1 %d %s\r\n".formatted(statusCode, reason);
         if (body != null) {
             okResponse += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n%s".formatted(contentType, body.length(), body);
         } else {
@@ -128,19 +133,19 @@ public class Main {
         clientSocket.getOutputStream().write(okResponse.getBytes());
     }
 
-    private static void okResponse(Socket clientSocket, int statusCode) throws IOException {
-        okResponse(clientSocket, null, null, statusCode);
+    private static void okResponse(Socket clientSocket, int statusCode, String reason) throws IOException {
+        okResponse(clientSocket, null, null, statusCode, reason);
     }
 
     private static void okResponse(Socket clientSocket, String body) throws IOException {
-        okResponse(clientSocket, body, "text/plain", 200);
+        okResponse(clientSocket, body, "text/plain", 200, "OK");
     }
 
     private static void okResponse(Socket clientSocket, String body, String contentType) throws IOException {
-        okResponse(clientSocket, body, contentType, 200);
+        okResponse(clientSocket, body, contentType, 200, "OK");
     }
 
     private static void okResponse(Socket clientSocket) throws IOException {
-        okResponse(clientSocket, null, null, 200);
+        okResponse(clientSocket, null, null, 200, "OK");
     }
 }
