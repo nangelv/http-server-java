@@ -95,6 +95,7 @@ public class Main {
     private static String readBody(BufferedReader reader) throws IOException {
         var stringBuilder = new StringBuilder();
         var contentLine = reader.readLine();
+        System.out.println("Read line: " + contentLine);
         while (contentLine != null) {
             stringBuilder.append(contentLine);
             contentLine = reader.readLine();
