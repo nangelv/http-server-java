@@ -65,7 +65,9 @@ public class Main {
                     if(path.startsWith("/files/")) {
                         var fileName = path.substring("/files/".length());
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
+                        System.out.println("Handling file upload to " + fileName);
                         readHeaders(reader);
+                        System.out.println("Saving new file to " + filePath);
                         var body = readBody(reader);
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
