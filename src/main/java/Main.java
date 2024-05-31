@@ -50,6 +50,7 @@ public class Main {
             sendResponse(clientSocket, response);
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
