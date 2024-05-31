@@ -5,8 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class Main {
@@ -34,12 +32,6 @@ public class Main {
         }
     }
 
-    public record HttpRequest(String method, String path, Map<String, String> headers, String body) {
-        public String getHeader(String header) {
-            return headers.get(header);
-        }
-    }
-
     private static void handleHttpConnection(Socket clientSocket) {
         try {
             System.out.println("Accepted new connection from " + clientSocket.getRemoteSocketAddress());
@@ -63,6 +55,7 @@ public class Main {
                 try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
                     GZIPOutputStream gzip = new GZIPOutputStream(outputStream);
                     gzip.write(response.getBody().getBytes());
+                    gzip.close();
                     response.withContentEncoding("gzip");
                     System.out.println("Response before encoding " + response.getBody());
                     response.withBody(outputStream.toString());
@@ -84,20 +77,20 @@ public class Main {
     }
 
     private static HttpResponse.Builder routeRequest(HttpRequest request) throws IOException {
-        if (request.method.equals("GET")) {
-            if (request.path.equals("/")) {
+        if (request.method().equals("GET")) {
+            if (request.path().equals("/")) {
                 return HttpResponse.ok();
-            } else if (request.path.startsWith("/echo/")) {
-                var echoArgument = request.path.substring("/echo/".length());
+            } else if (request.path().startsWith("/echo/")) {
+                var echoArgument = request.path().substring("/echo/".length());
                 return HttpResponse.ok()
                         .withContentType("text/plain")
                         .withBody(echoArgument);
-            } else if (request.path.equals("/user-agent")) {
+            } else if (request.path().equals("/user-agent")) {
                 return HttpResponse.ok()
                         .withContentType("text/plain")
                         .withBody(request.getHeader("User-Agent"));
-            } else if(request.path.startsWith("/files/")) {
-                var fileName = request.path.substring("/files/".length());
+            } else if(request.path().startsWith("/files/")) {
+                var fileName = request.path().substring("/files/".length());
                 var filePath = Path.of(SERVER_DIRECTORY, fileName);
                 if (Files.exists(filePath)) {
                     var fileContent = Files.readString(filePath);
@@ -106,16 +99,16 @@ public class Main {
                             .withBody(fileContent);
                 }
             }
-        } else if (request.method.equals("POST")) {
-            if(request.path.startsWith("/files/")) {
-                var fileName = request.path.substring("/files/".length());
+        } else if (request.method().equals("POST")) {
+            if(request.path().startsWith("/files/")) {
+                var fileName = request.path().substring("/files/".length());
                 var filePath = Path.of(SERVER_DIRECTORY, fileName);
                 if (!Files.exists(filePath.getParent())) {
                     System.out.println("Creating parent directory " + filePath.getParent());
                     Files.createDirectories(filePath.getParent());
                 }
-                Files.writeString(filePath, request.body);
-                System.out.println("Saved new file at " + filePath + " with content:\n" + request.body);
+                Files.writeString(filePath, request.body());
+                System.out.println("Saved new file at " + filePath + " with content:\n" + request.body());
                 return HttpResponse.created();
             }
         }
