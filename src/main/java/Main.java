@@ -68,9 +68,8 @@ public class Main {
                     if(path.startsWith("/files/")) {
                         var fileName = path.substring("/files/".length());
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
-                        readHeaders(reader);
-                        System.out.println("About to start reading body at " + LocalDateTime.now());
-                        var body = readBody(reader);
+                        var headers = readHeaders(reader);
+                        var body = readBody(reader, Integer.parseInt(headers.get("Content-Length")));
                         System.out.println("Creating parent directory at " + LocalDateTime.now());
                         System.out.println("Creating parent directory " + filePath.getParent());
                         Files.createDirectory(filePath.getParent());
@@ -100,10 +99,10 @@ public class Main {
         return headers;
     }
 
-    private static String readBody(BufferedReader reader) throws IOException {
+    private static String readBody(BufferedReader reader, int contentLength) throws IOException {
         var stringBuilder = new StringBuilder();
         var ch = reader.read();
-        while (ch != -1) {
+        for (var i = 0; i < contentLength; i++) {
             System.out.println("Reading character from body at " + LocalDateTime.now());
             stringBuilder.append((char)ch);
             ch = reader.read();
