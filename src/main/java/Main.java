@@ -64,7 +64,9 @@ public class Main {
                     GZIPOutputStream gzip = new GZIPOutputStream(outputStream);
                     gzip.write(response.getBody().getBytes());
                     response.withContentEncoding("gzip");
+                    System.out.println("Response before encoding " + response.getBody());
                     response.withBody(outputStream.toString());
+                    System.out.println("Response after encoding " + response.getBody());
                 }
             }
         }
