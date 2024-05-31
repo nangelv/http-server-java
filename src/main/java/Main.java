@@ -70,9 +70,10 @@ public class Main {
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
                         var headers = readHeaders(reader);
                         var body = readBody(reader, Integer.parseInt(headers.get("Content-Length")));
-                        System.out.println("Creating parent directory at " + LocalDateTime.now());
-                        System.out.println("Creating parent directory " + filePath.getParent());
-                        Files.createDirectory(filePath.getParent());
+                        if (!Files.exists(filePath.getParent())) {
+                            System.out.println("Creating parent directory " + filePath.getParent());
+                            Files.createDirectories(filePath.getParent());
+                        }
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
                         System.out.println("With content:\n" + body);
