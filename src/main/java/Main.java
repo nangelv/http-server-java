@@ -69,11 +69,7 @@ public class Main {
                         readHeaders(reader);
                         var body = readBody(reader);
                         System.out.println("Creating parent directory " + filePath.getParent());
-                        Files.createDirectories(filePath.getParent());
-//                        if (!Files.exists(filePath.getParent())) {
-//                            System.out.println("Creating parent directory " + filePath.getParent());
-//                            Files.createDirectories(filePath.getParent());
-//                        }
+                        Files.createDirectory(filePath.getParent());
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
                         System.out.println("With content:\n" + body);
@@ -102,11 +98,10 @@ public class Main {
 
     private static String readBody(BufferedReader reader) throws IOException {
         var stringBuilder = new StringBuilder();
-        var ch = reader.read();
-        while (ch != -1) {
-            stringBuilder.append((char) ch);
-            ch = reader.read();
-            System.out.print(ch);
+        var contentLine = reader.readLine();
+        while (contentLine != null) {
+            stringBuilder.append(contentLine);
+            contentLine = reader.readLine();
         }
         return stringBuilder.toString();
     }
