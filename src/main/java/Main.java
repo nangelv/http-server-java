@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -42,27 +43,27 @@ public class Main {
     private static void handleHttpConnection(Socket clientSocket) {
         try {
             System.out.println("Accepted new connection from " + clientSocket.getRemoteSocketAddress());
-            var request = getRequest(clientSocket);
-            var response = routeRequest(request);
-            if ("gzip".equals(request.getHeader("Accept-Encoding"))) {
-                response.withContentEncoding("gzip");
+            try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+                var request = getRequest(reader);
+                var response = routeRequest(request);
+                if ("gzip".equals(request.getHeader("Accept-Encoding"))) {
+                    response.withContentEncoding("gzip");
+                }
+                sendResponse(clientSocket, response);
             }
-            sendResponse(clientSocket, response);
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private static HttpRequest getRequest(Socket clientSocket) throws IOException {
-        try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-            var requestLine = reader.readLine().split(" ");
-            var method = requestLine[0];
-            var path = requestLine[1];
-            var headers = readHeaders(reader);
-            var body = readBody(reader, headers);
-            return new HttpRequest(method, path, headers, body);
-        }
+    private static HttpRequest getRequest(BufferedReader reader) throws IOException {
+        var requestLine = reader.readLine().split(" ");
+        var method = requestLine[0];
+        var path = requestLine[1];
+        var headers = readHeaders(reader);
+        var body = readBody(reader, headers);
+        return new HttpRequest(method, path, headers, body);
     }
 
     private static HttpResponse.Builder routeRequest(HttpRequest request) throws IOException {
