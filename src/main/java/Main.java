@@ -102,7 +102,7 @@ public class Main {
     private static String readBody(BufferedReader reader, int contentLength) throws IOException {
         var stringBuilder = new StringBuilder();
         var ch = reader.read();
-        for (var i = 0; i < contentLength; i++) {
+        for (var i = 0; i < contentLength - 1; i++) {
             System.out.println("Reading character from body at " + LocalDateTime.now());
             stringBuilder.append((char)ch);
             ch = reader.read();
