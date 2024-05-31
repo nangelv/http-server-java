@@ -98,6 +98,7 @@ public class Main {
             headers.put(keyValuePair[0], keyValuePair[1]);
             headerLine = reader.readLine();
         }
+        System.out.println("Read header value " + headerLine);
         return headers;
     }
 
