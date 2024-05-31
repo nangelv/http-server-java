@@ -79,6 +79,10 @@ public class HttpResponse {
         public Builder() {
         }
 
+        public String getBody() {
+            return body;
+        }
+
         public Builder withBody(String body) {
             this.body = body;
             return this;

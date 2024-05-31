@@ -62,7 +62,7 @@ public class Main {
         if (acceptedEncodings != null) {
             var encodings = acceptedEncodings.split(",");
             if (Arrays.stream(encodings).map(String::trim).anyMatch("gzip"::equals)) {
-                try (GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(request.body.getBytes()))) {
+                try (GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(response.getBody().getBytes()))) {
                     String compressedBody = new String(gis.readAllBytes());
                     response.withContentEncoding("gzip");
                     response.withBody(compressedBody);
