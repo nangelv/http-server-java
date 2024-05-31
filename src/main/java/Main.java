@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.zip.GZIPOutputStream;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class Main {
 
     public static String SERVER_DIRECTORY;
@@ -52,15 +54,15 @@ public class Main {
         if (acceptedEncodings != null) {
             var encodings = acceptedEncodings.split(",");
             if (Arrays.stream(encodings).map(String::trim).anyMatch("gzip"::equals)) {
-                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                    GZIPOutputStream gzip = new GZIPOutputStream(outputStream);
-                    gzip.write(response.getBody().getBytes());
-                    gzip.close();
-                    response.withContentEncoding("gzip");
-                    System.out.println("Response before encoding " + response.getBody());
-                    response.withBody(outputStream.toString());
-                    System.out.println("Response after encoding " + response.getBody());
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                try (GZIPOutputStream gzip = new GZIPOutputStream(outputStream)) {
+                    gzip.write(response.getBody().getBytes(UTF_8));
                 }
+                var gzippedContent = outputStream.toString(UTF_8);
+                response.withContentEncoding("gzip");
+                System.out.println("Response before encoding " + response.getBody());
+                response.withBody(gzippedContent);
+                System.out.println("Response after encoding " + response.getBody());
             }
         }
     }
