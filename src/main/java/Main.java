@@ -108,6 +108,7 @@ public class Main {
             stringBuilder.append((char)ch);
             ch = reader.read();
         }
+        System.out.println("Finished reading characters at " + LocalDateTime.now());
         return stringBuilder.toString();
     }
 
