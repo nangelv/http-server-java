@@ -93,10 +93,10 @@ public class Main {
         var headers = new HashMap<String, String>();
         var headerLine = reader.readLine();
         while (headerLine != null && !headerLine.isEmpty()) {
+            System.out.println("Read header value " + headerLine);
             var keyValuePair = headerLine.split(": ");
             headers.put(keyValuePair[0], keyValuePair[1]);
             headerLine = reader.readLine();
-            System.out.println("Read header value " + keyValuePair);
         }
         return headers;
     }
