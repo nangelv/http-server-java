@@ -22,14 +22,11 @@ public class Main {
       System.out.println("accepted new connection");
       try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
         var path = reader.readLine().split(" ")[1];
-        System.out.println("Path is " + path);
-        if (path.equals("/")) {
-          clientSocket.getOutputStream().write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
-        } else {
-          clientSocket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
-        }
+        var echoArgument = path.substring(path.lastIndexOf("/") + 1);
+        var templateResponse = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s";
+        var response = String.format(templateResponse, echoArgument.length(), echoArgument);
+        clientSocket.getOutputStream().write(response.getBytes()); 
       }
-
     } catch (IOException e) {
       System.out.println("IOException: " + e.getMessage());
     }
