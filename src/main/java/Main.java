@@ -64,9 +64,12 @@ public class Main {
                     }
                 } else if (method.equals("POST")) {
                     if(path.startsWith("/files/")) {
+                        System.out.println("Handling upload file request");
                         var fileName = path.substring("/files/".length());
                         var filePath = Path.of(SERVER_DIRECTORY, fileName);
+                        System.out.println("Reading headers");
                         readHeaders(reader);
+                        System.out.println("Reading body");
                         var body = readBody(reader);
                         if (!Files.exists(filePath.getParent())) {
                             System.out.println("Creating parent directory " + filePath.getParent());
@@ -75,6 +78,8 @@ public class Main {
                         Files.writeString(filePath, body);
                         System.out.println("Saved new file at " + filePath);
                         okResponse(clientSocket, 201);
+                    } else {
+                        notFoundResponse(clientSocket);
                     }
                 }
             }
@@ -101,6 +106,7 @@ public class Main {
         while (contentLine != null) {
             stringBuilder.append(contentLine);
             contentLine = reader.readLine();
+            System.out.println("Read from body: " + contentLine);
         }
         return stringBuilder.toString();
     }
