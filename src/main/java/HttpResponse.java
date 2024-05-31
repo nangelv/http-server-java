@@ -4,12 +4,14 @@ public class HttpResponse {
     private final String contentType;
     private final String statusMessage;
     private final int statusCode;
+    private final String contentEncoding;
 
     private HttpResponse(Builder builder) {
         this.body = builder.body;
         this.contentType = builder.contentType;
         this.statusMessage = builder.statusMessage;
         this.statusCode = builder.statusCode;
+        this.contentEncoding = builder.contentEncoding;
     }
 
     public String getBody() {
@@ -31,6 +33,9 @@ public class HttpResponse {
     public String getResponse() {
         var response = "HTTP/1.1 %d %s\r\n".formatted(statusCode, statusCode);
         if (body != null) {
+            if (contentEncoding != null) {
+                response += "Content-Encoding: %s\r\n";
+            }
             response += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n%s".formatted(contentType, body.length(), body);
         } else {
             response += "\r\n";
@@ -69,6 +74,7 @@ public class HttpResponse {
         private String contentType;
         private String statusMessage;
         private int statusCode;
+        private String contentEncoding;
 
         public Builder() {
         }
@@ -90,6 +96,11 @@ public class HttpResponse {
 
         public Builder withStatusCode(int statusCode) {
             this.statusCode = statusCode;
+            return this;
+        }
+
+        public Builder withContentEncoding(String contentEncoding) {
+            this.contentEncoding = contentEncoding;
             return this;
         }
 

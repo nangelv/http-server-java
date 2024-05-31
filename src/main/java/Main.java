@@ -5,8 +5,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
 
@@ -33,63 +33,74 @@ public class Main {
         }
     }
 
+    public record HttpRequest(String method, String path, Map<String, String> headers, String body) {
+        public String getHeader(String header) {
+            return headers.get(header);
+        }
+    }
+
     private static void handleHttpConnection(Socket clientSocket) {
         try {
             System.out.println("Accepted new connection from " + clientSocket.getRemoteSocketAddress());
-            System.out.println("Starting at " + LocalDateTime.now());
-            try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-                var requestLine = reader.readLine().split(" ");
-                var method = requestLine[0];
-                var path = requestLine[1];
-                if (method.equals("GET")) {
-                    if (path.equals("/")) {
-                        sendResponse(clientSocket, HttpResponse.ok());
-                    } else if (path.startsWith("/echo/")) {
-                        var echoArgument = path.substring("/echo/".length());
-                        sendResponse(clientSocket, HttpResponse.ok()
-                                .withContentType("text/plain")
-                                .withBody(echoArgument));
-                    } else if (path.equals("/user-agent")) {
-                        var headers = readHeaders(reader);
-                        var userAgent = headers.get("User-Agent");
-                        sendResponse(clientSocket, HttpResponse.ok()
-                                .withContentType("text/plain")
-                                .withBody(userAgent));
-                    } else if(path.startsWith("/files/")) {
-                        var fileName = path.substring("/files/".length());
-                        var filePath = Path.of(SERVER_DIRECTORY, fileName);
-                        if (Files.exists(filePath)) {
-                            var fileContent = Files.readString(filePath);
-                            sendResponse(clientSocket, HttpResponse.ok()
-                                    .withContentType("application/octet-stream")
-                                    .withBody(fileContent));
-                        } else {
-                            sendResponse(clientSocket, HttpResponse.notFound());
-                        }
-                    } else {
-                        sendResponse(clientSocket, HttpResponse.notFound());
-                    }
-                } else if (method.equals("POST")) {
-                    if(path.startsWith("/files/")) {
-                        var fileName = path.substring("/files/".length());
-                        var filePath = Path.of(SERVER_DIRECTORY, fileName);
-                        var headers = readHeaders(reader);
-                        var body = readBody(reader, Integer.parseInt(headers.get("Content-Length")));
-                        if (!Files.exists(filePath.getParent())) {
-                            System.out.println("Creating parent directory " + filePath.getParent());
-                            Files.createDirectories(filePath.getParent());
-                        }
-                        Files.writeString(filePath, body);
-                        System.out.println("Saved new file at " + filePath + " with content:\n" + body);
-                        sendResponse(clientSocket, HttpResponse.created());
-                    } else {
-                        sendResponse(clientSocket, HttpResponse.notFound());
-                    }
-                }
+            var request = getRequest(clientSocket);
+            var response = routeRequest(request);
+            if ("gzip".equals(request.getHeader("Accept-Encoding"))) {
+                response.withContentEncoding("gzip");
             }
+            sendResponse(clientSocket, response);
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         }
+    }
+
+    private static HttpRequest getRequest(Socket clientSocket) throws IOException {
+        try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+            var requestLine = reader.readLine().split(" ");
+            var method = requestLine[0];
+            var path = requestLine[1];
+            var headers = readHeaders(reader);
+            var body = readBody(reader, headers);
+            return new HttpRequest(method, path, headers, body);
+        }
+    }
+
+    private static HttpResponse.Builder routeRequest(HttpRequest request) throws IOException {
+        if (request.method.equals("GET")) {
+            if (request.path.equals("/")) {
+                return HttpResponse.ok();
+            } else if (request.path.startsWith("/echo/")) {
+                var echoArgument = request.path.substring("/echo/".length());
+                return HttpResponse.ok()
+                        .withContentType("text/plain")
+                        .withBody(echoArgument);
+            } else if (request.path.equals("/user-agent")) {
+                return HttpResponse.ok()
+                        .withContentType("text/plain")
+                        .withBody(request.getHeader("User-Agent"));
+            } else if(request.path.startsWith("/files/")) {
+                var fileName = request.path.substring("/files/".length());
+                var filePath = Path.of(SERVER_DIRECTORY, fileName);
+                if (Files.exists(filePath)) {
+                    var fileContent = Files.readString(filePath);
+                    return HttpResponse.ok()
+                            .withContentType("application/octet-stream")
+                            .withBody(fileContent);
+                }
+            }
+        } else if (request.method.equals("POST")) {
+            if(request.path.startsWith("/files/")) {
+                var fileName = request.path.substring("/files/".length());
+                var filePath = Path.of(SERVER_DIRECTORY, fileName);
+                if (!Files.exists(filePath.getParent())) {
+                    System.out.println("Creating parent directory " + filePath.getParent());
+                    Files.createDirectories(filePath.getParent());
+                }
+                Files.writeString(filePath, request.body);
+                System.out.println("Saved new file at " + filePath + " with content:\n" + request.body);
+                return HttpResponse.created();
+            }
+        }
+        return HttpResponse.notFound();
     }
 
     private static HashMap<String, String> readHeaders(BufferedReader reader) throws IOException {
@@ -103,7 +114,9 @@ public class Main {
         return headers;
     }
 
-    private static String readBody(BufferedReader reader, int contentLength) throws IOException {
+    private static String readBody(BufferedReader reader, HashMap<String, String> headers) throws IOException {
+        if (!headers.containsKey("Content-Length")) return null;
+        var contentLength = Integer.parseInt(headers.get("Content-Length"));
         var content = new char[contentLength];
         if (reader.read(content) == -1) {
             throw new RuntimeException("No content found");
