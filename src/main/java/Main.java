@@ -100,10 +100,11 @@ public class Main {
 
     private static String readBody(BufferedReader reader) throws IOException {
         var stringBuilder = new StringBuilder();
-        var contentLine = reader.readLine();
-        while (contentLine != null) {
-            stringBuilder.append(contentLine);
-            contentLine = reader.readLine();
+        var ch = reader.read();
+        while (ch != -1) {
+            stringBuilder.append(ch);
+            ch = reader.read();
+            System.out.print(ch);
         }
         return stringBuilder.toString();
     }
