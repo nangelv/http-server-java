@@ -31,7 +31,7 @@ public class HttpResponse {
     }
 
     public String getResponse() {
-        var response = "HTTP/1.1 %d %s\r\n".formatted(statusCode, statusCode);
+        var response = "HTTP/1.1 %d %s\r\n".formatted(statusCode, statusMessage);
         if (body != null) {
             if (contentEncoding != null) {
                 response += "Content-Encoding: %s\r\n";
