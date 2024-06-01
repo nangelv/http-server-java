@@ -58,10 +58,11 @@ public class Main {
                 try (GZIPOutputStream gzip = new GZIPOutputStream(outputStream)) {
                     gzip.write(response.getBody().getBytes(UTF_8));
                 }
-                var gzippedContent = outputStream.toString(UTF_8);
+                var gzippedContent = outputStream.toByteArray();
                 response.withContentEncoding("gzip");
                 System.out.println("Response before encoding " + response.getBody());
-                response.withBody(gzippedContent);
+                response.withBody(new String(gzippedContent));
+                System.out.println("Response after encoding " + new String(gzippedContent));
                 System.out.println("Response after encoding " + response.getBody());
             }
         }
