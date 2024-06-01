@@ -124,6 +124,7 @@ public class Main {
         if (response.getBody() != null) {
             responsePayload = response.getBody().getBytes();
             if (gzipIsAccepted(request)) {
+                response.withContentEncoding("gzip");
                 responsePayload = gzipCompress(responsePayload);
             }
         }
