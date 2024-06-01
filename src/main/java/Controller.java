@@ -37,7 +37,7 @@ public class Controller {
             if (Files.exists(filePath)) {
                 var fileContent = Files.readString(filePath);
                 return HttpResponse.ok()
-                        .withHeader("Content-TypeContent-Type", "application/octet-stream")
+                        .withHeader("Content-Type", "application/octet-stream")
                         .withBody(fileContent);
             }
         }
