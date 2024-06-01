@@ -30,21 +30,17 @@ public class HttpResponse {
         return statusCode;
     }
 
-    public String getResponse() {
+    public String getResponseHeader() {
         var response = "HTTP/1.1 %d %s\r\n".formatted(statusCode, statusMessage);
         if (body != null) {
             if (contentEncoding != null) {
                 response += "Content-Encoding: %s\r\n".formatted(contentEncoding);
             }
-            response += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n%s".formatted(contentType, body.length(), body);
+            response += "Content-Type: %s\r\nContent-Length: %d\r\n\r\n".formatted(contentType, body.length());
         } else {
             response += "\r\n";
         }
         return response;
-    }
-
-    public byte[] getResponseBytes() {
-        return getResponse().getBytes();
     }
 
     public static Builder builder() {

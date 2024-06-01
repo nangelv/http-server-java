@@ -40,31 +40,11 @@ public class Main {
             try (var reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 var request = getRequest(reader);
                 var response = routeRequest(request);
-                handleCompression(request, response);
-                sendResponse(clientSocket, response);
+                sendResponse(clientSocket, request, response);
             }
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
             e.printStackTrace();
-        }
-    }
-
-    private static void handleCompression(HttpRequest request, HttpResponse.Builder response) throws IOException {
-        var acceptedEncodings = request.getHeader("Accept-Encoding");
-        if (acceptedEncodings != null) {
-            var encodings = acceptedEncodings.split(",");
-            if (Arrays.stream(encodings).map(String::trim).anyMatch("gzip"::equals)) {
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                try (GZIPOutputStream gzip = new GZIPOutputStream(outputStream)) {
-                    gzip.write(response.getBody().getBytes(UTF_8));
-                }
-                var gzippedContent = outputStream.toByteArray();
-                response.withContentEncoding("gzip");
-                System.out.println("Response before encoding " + response.getBody());
-                response.withBody(new String(gzippedContent));
-                System.out.println("Response after encoding " + new String(gzippedContent));
-                System.out.println("Response after encoding " + response.getBody());
-            }
         }
     }
 
@@ -139,7 +119,30 @@ public class Main {
         return new String(content);
     }
 
-    private static void sendResponse(Socket clientSocket, HttpResponse.Builder response) throws IOException {
-        clientSocket.getOutputStream().write(response.build().getResponseBytes());
+    private static void sendResponse(Socket clientSocket, HttpRequest request, HttpResponse.Builder response) throws IOException {
+        var responseHeader = response.build().getResponseHeader().getBytes();
+        clientSocket.getOutputStream().write(responseHeader);
+
+        if (response.getBody() != null) return;
+        var responsePayload = response.getBody().getBytes();
+        if (gzipIsAccepted(request)) {
+            responsePayload = gzipCompress(responsePayload);
+        }
+        clientSocket.getOutputStream().write(responsePayload);
     }
+
+    private static byte[] gzipCompress(byte[] payload) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (GZIPOutputStream gzip = new GZIPOutputStream(outputStream)) {
+            gzip.write(payload);
+        }
+        return outputStream.toByteArray();
+    }
+
+    private static boolean gzipIsAccepted(HttpRequest request) {
+        if (!request.headers().containsKey("Accept-Encoding")) return false;
+        var acceptedEncodings = request.getHeader("Accept-Encoding").split(",");
+        return Arrays.stream(acceptedEncodings).map(String::trim).anyMatch("gzip"::equals);
+    }
+
 }
