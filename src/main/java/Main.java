@@ -120,17 +120,26 @@ public class Main {
     }
 
     private static void sendResponse(Socket clientSocket, HttpRequest request, HttpResponse.Builder response) throws IOException {
-        System.out.println("Header: " + response.build().getResponseHeader());
-        var responseHeader = response.build().getResponseHeader().getBytes();
-        clientSocket.getOutputStream().write(responseHeader);
-
-        if (response.getBody() != null) return;
-        System.out.println("Body " + response.getBody());
-        var responsePayload = response.getBody().getBytes();
-        if (gzipIsAccepted(request)) {
-            responsePayload = gzipCompress(responsePayload);
-            System.out.println("Body after compression " + response.getBody());
+        byte[] responsePayload = null;
+        if (response.getBody() != null) {
+            responsePayload = response.getBody().getBytes();
+            if (gzipIsAccepted(request)) {
+                responsePayload = gzipCompress(responsePayload);
+            }
         }
+        var r = response.build();
+        var sb = new StringBuilder();
+        sb.append("HTTP/1.1 %d %s\r\n".formatted(r.getStatusCode(), r.getStatusMessage()));
+        if (r.getBody() != null) {
+            if (r.getContentEncoding() != null) {
+                sb.append("Content-Encoding: %s\r\n".formatted(r.getContentEncoding()));
+            }
+            sb.append("Content-Type: %s\r\nContent-Length: %d\r\n\r\n".formatted(r.getContentType(), responsePayload.length));
+        } else {
+            sb.append("\r\n");
+        }
+
+        clientSocket.getOutputStream().write(sb.toString().getBytes());
         clientSocket.getOutputStream().write(responsePayload);
     }
 
@@ -147,5 +156,4 @@ public class Main {
         var acceptedEncodings = request.getHeader("Accept-Encoding").split(",");
         return Arrays.stream(acceptedEncodings).map(String::trim).anyMatch("gzip"::equals);
     }
-
 }
