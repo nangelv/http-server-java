@@ -120,13 +120,16 @@ public class Main {
     }
 
     private static void sendResponse(Socket clientSocket, HttpRequest request, HttpResponse.Builder response) throws IOException {
+        System.out.println("Header: " + response.build().getResponseHeader());
         var responseHeader = response.build().getResponseHeader().getBytes();
         clientSocket.getOutputStream().write(responseHeader);
 
         if (response.getBody() != null) return;
+        System.out.println("Body " + response.getBody());
         var responsePayload = response.getBody().getBytes();
         if (gzipIsAccepted(request)) {
             responsePayload = gzipCompress(responsePayload);
+            System.out.println("Body after compression " + response.getBody());
         }
         clientSocket.getOutputStream().write(responsePayload);
     }
