@@ -24,12 +24,12 @@ public class Controller {
         } else if (request.path().startsWith("/echo/")) {
             var echoArgument = request.path().substring("/echo/".length());
             return HttpResponse.ok()
-                    .withHeader("Content-TypeContent-Type", "text/plain")
+                    .withHeader(Headers.CONTENT_TYPE, "text/plain")
                     .withBody(echoArgument);
         } else if (request.path().equals("/user-agent")) {
             var requestUserAgent = request.getHeader("User-Agent");
             return HttpResponse.ok()
-                    .withHeader("Content-TypeContent-Type", "text/plain")
+                    .withHeader(Headers.CONTENT_TYPE, "text/plain")
                     .withBody(requestUserAgent);
         } else if(request.path().startsWith("/files/")) {
             var fileName = request.path().substring("/files/".length());
@@ -37,7 +37,7 @@ public class Controller {
             if (Files.exists(filePath)) {
                 var fileContent = Files.readString(filePath);
                 return HttpResponse.ok()
-                        .withHeader("Content-Type", "application/octet-stream")
+                        .withHeader(Headers.CONTENT_TYPE, "application/octet-stream")
                         .withBody(fileContent);
             }
         }

@@ -1,5 +1,4 @@
 import java.io.*;
-import java.net.Socket;
 import java.util.zip.GZIPOutputStream;
 
 public class HttpRequestWriter implements Closeable {
@@ -15,10 +14,10 @@ public class HttpRequestWriter implements Closeable {
         byte[] responseBodyRaw = null;
         if (response.getBody() != null) {
             responseBodyRaw = response.getBody().getBytes();
-            if ("gzip".equals(response.getHeader("Content-Encoding"))) {
+            if ("gzip".equals(response.getHeader(Headers.CONTENT_ENCODING))) {
                 responseBodyRaw = gzipCompress(responseBodyRaw);
             }
-            response.withHeader("Content-length", Integer.toString(responseBodyRaw.length));
+            response.withHeader(Headers.CONTENT_LENGTH, Integer.toString(responseBodyRaw.length));
         }
 
         // Response status line
